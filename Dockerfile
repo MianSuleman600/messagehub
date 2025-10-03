@@ -26,17 +26,21 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 # Install PHP dependencies
 RUN composer install --optimize-autoloader --no-dev
 
-# Install Node dependencies (Vite + Tailwind)
-RUN npm install
+# Install Node dependencies (Tailwind CLI + PostCSS)
+RUN npm install tailwindcss postcss autoprefixer
 
-# Build frontend assets
-RUN npm run build
+# Build Tailwind CSS
+RUN npx tailwindcss -i ./resources/css/app.css -o ./public/css/app.css --minify
+
+# Optional: build JS if using Vite
+RUN npm install && npm run build
 
 # Set permissions for storage and cache
-RUN chown -R www-data:www-data storage bootstrap/cache
+RUN chown -R www-data:www-data storage bootstrap/cache public/css
 
 # Expose port 8080
 EXPOSE 8080
 
 # Run migrations on container start and then start Laravel server
 CMD php artisan migrate --force && php artisan serve --host 0.0.0.0 --port 8080
+ 
