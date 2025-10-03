@@ -1,11 +1,7 @@
-# -------------------------
-# Base Image
-# -------------------------
+# Use PHP 8.2 FPM base image
 FROM php:8.2-fpm
 
-# -------------------------
-# System dependencies
-# -------------------------
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -18,54 +14,32 @@ RUN apt-get update && apt-get install -y \
     npm \
     && docker-php-ext-install pdo pdo_pgsql mbstring zip bcmath
 
-# -------------------------
 # Set working directory
-# -------------------------
 WORKDIR /var/www/html
 
-# -------------------------
-# Install Composer
-# -------------------------
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
-# -------------------------
-# Copy composer files and install PHP dependencies
-# -------------------------
-COPY composer.json composer.lock ./
-RUN composer install --optimize-autoloader --no-dev
-
-# -------------------------
-# Copy the rest of the application
-# -------------------------
+# Copy all project files first
 COPY . .
 
-# -------------------------
-# Install Node dependencies for Vite
-# -------------------------
-COPY package.json package-lock.json vite.config.js tailwind.config.js postcss.config.js ./
+# Install composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Install PHP dependencies
+RUN composer install --optimize-autoloader --no-dev
+
+# Install Node dependencies for Vite + Tailwind
 RUN npm install
 
-# -------------------------
 # Build frontend assets
-# -------------------------
 RUN npm run build
 
-# -------------------------
-# Generate Laravel key
-# -------------------------
+# Generate Laravel app key
 RUN php artisan key:generate
 
-# -------------------------
-# Set permissions
-# -------------------------
+# Set permissions for storage and cache
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# -------------------------
 # Expose port 8080
-# -------------------------
 EXPOSE 8080
 
-# -------------------------
-# Start Laravel server
-# -------------------------
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080"]
+# Start Laravel development server
+CMD php artisan serve --host 0.0.0.0 --port 8080
