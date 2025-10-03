@@ -17,23 +17,20 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy all project files first
+# Copy project files
 COPY . .
 
-# Install composer
+# Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 # Install PHP dependencies
 RUN composer install --optimize-autoloader --no-dev
 
-# Install Node dependencies for Vite + Tailwind
+# Install Node dependencies (Vite + Tailwind)
 RUN npm install
 
 # Build frontend assets
 RUN npm run build
-
-# Generate Laravel app key
-RUN php artisan key:generate
 
 # Set permissions for storage and cache
 RUN chown -R www-data:www-data storage bootstrap/cache
@@ -41,5 +38,5 @@ RUN chown -R www-data:www-data storage bootstrap/cache
 # Expose port 8080
 EXPOSE 8080
 
-# Start Laravel development server
+# Start Laravel server
 CMD php artisan serve --host 0.0.0.0 --port 8080
