@@ -11,6 +11,7 @@ class ChannelAccount extends Model
 
     protected $fillable = [
         'provider',
+        'external_id',   // TikTok open_id or other channel ID
         'name',
         'credentials',
         'meta',
@@ -19,7 +20,7 @@ class ChannelAccount extends Model
     ];
 
     protected $casts = [
-        'credentials' => 'array', // JSON array, not encrypted
+        'credentials' => 'array',
         'meta' => 'array',
         'is_active' => 'boolean',
     ];

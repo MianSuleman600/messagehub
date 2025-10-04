@@ -4,25 +4,21 @@ namespace App\Integrations\OAuth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use App\Domain\Messaging\Models\ChannelAccount;
+use Illuminate\Support\Facades\Log;
 
 class TikTokConnectController extends Controller
 {
     public function __construct(protected TikTokOAuthService $tiktok) {}
 
-    /**
-     * Redirect the user to TikTok's OAuth authorization page.
-     */
+    // Step 1: Redirect user to TikTok OAuth
     public function start()
     {
         $state = $this->tiktok->makeState();
         return redirect()->away($this->tiktok->authorizeUrl($state));
     }
 
-    /**
-     * Handle the TikTok OAuth callback.
-     */
+    // Step 2: Handle OAuth callback
     public function callback(Request $request)
     {
         $state = $request->get('state');
@@ -39,35 +35,29 @@ class TikTokConnectController extends Controller
         }
 
         try {
-            // Exchange code for tokens
             $tokens = $this->tiktok->exchangeCodeForTokens($code);
+
             $accessToken  = $tokens['access_token'] ?? null;
             $refreshToken = $tokens['refresh_token'] ?? null;
             $openId       = $tokens['open_id'] ?? null;
-            $expiresIn    = $tokens['expires_in'] ?? null;
 
             if (!$accessToken || !$openId) {
                 return redirect()->route('settings.channels')
                     ->withErrors(['tiktok' => 'Could not obtain TikTok tokens.']);
             }
 
-            // Fetch user info
             $user = $this->tiktok->userInfo($accessToken);
-            $displayName = $user['display_name'] ?? 'TikTok Account';
 
-            // Store or update channel account
+            // Save or update TikTok account
             ChannelAccount::updateOrCreate(
-                ['type' => 'tiktok', 'external_id' => $openId],
+                ['provider' => 'tiktok', 'external_id' => $openId],
                 [
-                    'name'        => $displayName,
+                    'name'        => $user['display_name'] ?? 'TikTok Account',
                     'is_active'   => true,
                     'credentials' => [
-                        'provider'      => 'tiktok',
-                        'open_id'       => $openId,
                         'access_token'  => $accessToken,
                         'refresh_token' => $refreshToken,
-                        'expires_in'    => $expiresIn,
-                        'scopes'        => $tokens['scope'] ?? null,
+                        'expires_in'    => $tokens['expires_in'] ?? null,
                         'token_type'    => $tokens['token_type'] ?? 'Bearer',
                     ],
                 ]
@@ -77,9 +67,9 @@ class TikTokConnectController extends Controller
                 ->with('status', 'TikTok account connected successfully.');
 
         } catch (\Throwable $e) {
-            Log::error('TikTok connect failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            Log::error('TikTok connect failed', ['error' => $e->getMessage()]);
             return redirect()->route('settings.channels')
-                ->withErrors(['tiktok' => 'TikTok connect failed. Check app credentials and permissions.']);
+                ->withErrors(['tiktok' => 'TikTok connect failed.']);
         }
     }
 }

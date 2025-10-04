@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Integrations\OAuth\TikTok;
+namespace App\Integrations\Channels\TikTok\Webhook;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Domain\Messaging\Jobs\ProcessIncomingMessageJob;
 use Illuminate\Support\Facades\Log;
+use App\Domain\Messaging\Jobs\ProcessIncomingMessageJob;
 
 class TikTokWebhookController extends Controller
 {
@@ -14,6 +14,7 @@ class TikTokWebhookController extends Controller
         $payload = $request->all();
         Log::info('TikTok Webhook received', ['payload' => $payload]);
 
+        // Dispatch job to process message
         ProcessIncomingMessageJob::dispatch([
             'channel' => 'tiktok',
             'payload' => $payload,

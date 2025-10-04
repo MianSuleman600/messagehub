@@ -28,8 +28,9 @@ class ProcessIncomingMessageJob implements ShouldQueue
             Log::error('ProcessIncomingMessageJob failed', [
                 'payload' => $this->payload,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
-            throw $e; // Allows Laravel to retry the job
+            throw $e; // allows retry
         }
     }
 }
